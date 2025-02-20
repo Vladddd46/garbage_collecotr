@@ -1,45 +1,54 @@
 #include "MemoryPool.hpp"
 #include <cstdlib>   // Для std::aligned_alloc та std::free
-#include <stdexcept> // Для std::bad_alloc
+#include <stdexcept>
 
+// Конструктор: перевірка розміру та початкове виділення першого сегмента
 MemoryPool::MemoryPool(size_t chunkSize, size_t poolSize, size_t alignment)
     : chunkSize(chunkSize), poolSize(poolSize), alignment(alignment)
 {
-    // Обчислення загального розміру пам’яті
-    size_t totalSize = chunkSize * poolSize;
-    // Забезпечуємо, щоб totalSize було кратним alignment
-    if (totalSize % alignment != 0) {
-        totalSize = ((totalSize + alignment - 1) / alignment) * alignment;
+    if (chunkSize > 128) {
+        throw std::invalid_argument("This pool is designed for small objects (<= 128 bytes).");
     }
+    addSegment(); // Виділення першого сегмента
+}
 
-    // Виділення вирівняної пам’яті
-    pool = static_cast<char*>(std::aligned_alloc(alignment, totalSize));
-    if (!pool) {
+// Метод addSegment виділяє новий сегмент пам’яті та додає усі його блоки до freeList
+void MemoryPool::addSegment() {
+    size_t segmentSize = chunkSize * poolSize;
+    // Забезпечуємо, щоб segmentSize було кратним alignment
+    if (segmentSize % alignment != 0) {
+        segmentSize = ((segmentSize + alignment - 1) / alignment) * alignment;
+    }
+    char* segment = static_cast<char*>(std::aligned_alloc(alignment, segmentSize));
+    if (!segment) {
         throw std::bad_alloc();
     }
-
-    // Заповнення впорядкованого freeList: блоки будуть зростати за адресою
+    segments.push_back(segment);
+    // Додаємо кожен блок цього сегмента у freeList
     for (size_t i = 0; i < poolSize; i++) {
-        freeList.insert(pool + i * chunkSize);
+        freeList.push_back(segment + i * chunkSize);
     }
 }
 
-MemoryPool::~MemoryPool() {
-    std::free(pool);
-}
-
+// Метод allocate повертає блок із freeList; якщо freeList порожня, додається новий сегмент
 void* MemoryPool::allocate() {
     if (freeList.empty()) {
-        throw std::bad_alloc();
+        addSegment();
     }
-    // Отримуємо блок з найменшою адресою
-    auto it = freeList.begin();
-    void* ptr = *it;
-    freeList.erase(it);
+    void* ptr = freeList.back();
+    freeList.pop_back();
     return ptr;
 }
 
+// Метод deallocate повертає блок у freeList для подальшого повторного використання
 void MemoryPool::deallocate(void* ptr) {
-    // Автоматично впорядковуємо за допомогою std::set
-    freeList.insert(ptr);
+    // Можна додати перевірку належності ptr одному з сегментів (опціонально)
+    freeList.push_back(ptr);
+}
+
+// Деструктор звільняє усі сегменти
+MemoryPool::~MemoryPool() {
+    for (char* segment : segments) {
+        std::free(segment);
+    }
 }
