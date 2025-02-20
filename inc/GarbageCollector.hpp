@@ -8,7 +8,9 @@
 #include <new>
 #include <cassert>
 #include <utility>
-#include "DefaultAllocator.hpp"
+
+#include "StandardAllocator.hpp"
+#include "PoolAllocator.hpp"
 
 // Garbage Collector з генераційним підходом
 class GarbageCollector {
@@ -24,7 +26,7 @@ public:
     GarbageCollector(size_t poolChunkSize = 64, size_t poolCapacity = 1024);
 
     // Шаблонний метод для алокації об'єктів через GC з використанням заданого аллокатора
-    template <typename T, typename Allocator = DefaultAllocator<T>, typename... Args>
+    template <typename T, typename Allocator = PoolAllocator<T>, typename... Args>
 	T* allocate(Args&&... args) {
 	    std::lock_guard<std::mutex> lock(gcMutex);
 	    T* obj = Allocator::allocate(pool);
