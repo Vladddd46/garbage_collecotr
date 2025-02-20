@@ -2,19 +2,17 @@
 #include "MemoryPool.hpp"
 #include "TestObject_1.hpp"
 #include "GarbageCollector.hpp"
-
-#include "StandardAllocator.hpp"
-#include "PoolAllocator.hpp"
+#include "Allocators.hpp"
 
 int main() {
     GarbageCollector gc;
 
 
     // Використання StandardAllocator (виділення пам'яті через глобальний new)
-    TestObject_1* obj11 = gc.allocate<TestObject_1, StandardAllocator<TestObject_1>>(10);
+    TestObject_1* obj11 = gc.allocate<TestObject_1, StandardAllocator<TestObject_1>>(1000);
 
     // Використання PoolAllocator (виділення пам'яті з пулу)
-    TestObject_1* obj21 = gc.allocate<TestObject_1, PoolAllocator<TestObject_1>>(20);
+    TestObject_1* obj21 = gc.allocate<TestObject_1, PoolAllocator<TestObject_1>>(20000);
 
 
     TestObject_1* obj1 = gc.allocate<TestObject_1>(10);

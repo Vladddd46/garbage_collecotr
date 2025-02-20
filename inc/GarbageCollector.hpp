@@ -8,9 +8,7 @@
 #include <new>
 #include <cassert>
 #include <utility>
-
-#include "StandardAllocator.hpp"
-#include "PoolAllocator.hpp"
+#include "Allocators.hpp"
 
 // Garbage Collector з генераційним підходом
 class GarbageCollector {
@@ -19,7 +17,6 @@ public:
     std::vector<GCObject*> oldGen;
 
     // Пул пам’яті для малих об’єктів
-    MemoryPool pool;
 
     std::mutex gcMutex;
 
@@ -29,7 +26,7 @@ public:
     template <typename T, typename Allocator = PoolAllocator<T>, typename... Args>
 	T* allocate(Args&&... args) {
 	    std::lock_guard<std::mutex> lock(gcMutex);
-	    T* obj = Allocator::allocate(pool);
+	    T* obj = Allocator::allocate();
 	    new(obj) T(std::forward<Args>(args)...);
 	    eden.push_back(obj);
 	    return obj;

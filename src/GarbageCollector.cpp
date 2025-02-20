@@ -1,8 +1,7 @@
 #include "GarbageCollector.hpp"
-
+#include "GlobalMemoryPool.hpp"
 
 GarbageCollector::GarbageCollector(size_t poolChunkSize, size_t poolCapacity)
-	: pool(poolChunkSize, poolCapacity)
 {}
 
 void GarbageCollector::mark(std::vector<GCObject*>& roots) {
@@ -30,7 +29,7 @@ void GarbageCollector::sweep(std::vector<GCObject*>& generation) {
 		GCObject* obj = *it;
 		if (!obj->marked) {
 			obj->~GCObject();
-			pool.deallocate(obj);
+			globalMemoryPool.deallocate(obj);
 			it = generation.erase(it);
 		} else {
 			obj->marked = false;
