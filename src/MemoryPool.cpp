@@ -18,9 +18,9 @@ MemoryPool::MemoryPool(size_t chunkSize, size_t poolSize, size_t alignment)
         throw std::bad_alloc();
     }
 
-    // Заповнення списку вільних блоків
+    // Заповнення впорядкованого freeList: блоки будуть зростати за адресою
     for (size_t i = 0; i < poolSize; i++) {
-        freeList.push_back(pool + i * chunkSize);
+        freeList.insert(pool + i * chunkSize);
     }
 }
 
@@ -32,11 +32,14 @@ void* MemoryPool::allocate() {
     if (freeList.empty()) {
         throw std::bad_alloc();
     }
-    void* ptr = freeList.back();
-    freeList.pop_back();
+    // Отримуємо блок з найменшою адресою
+    auto it = freeList.begin();
+    void* ptr = *it;
+    freeList.erase(it);
     return ptr;
 }
 
 void MemoryPool::deallocate(void* ptr) {
-    freeList.push_back(ptr);
+    // Автоматично впорядковуємо за допомогою std::set
+    freeList.insert(ptr);
 }
